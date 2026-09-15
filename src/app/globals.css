@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #eaede8;
+  --paper-raised: #f4f6f2;
+  --ink: #1c2a35;
+  --ink-soft: #4a5a63;
+  --line: #c9cabd;
+  --brass: #a3803f;
+  --vermillion: #9c3b2e;
+  --forest: #3c6e54;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-brass: var(--brass);
+  --color-vermillion: var(--vermillion);
+  --color-forest: var(--forest);
+  --font-serif: var(--font-slab);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-reg);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.diary-no {
+  font-family: var(--font-reg), ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
