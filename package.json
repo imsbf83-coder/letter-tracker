@@ -36,4 +36,10 @@
     "tsx": "^4.23.13",
     "typescript": "^5"
   }
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate"
+  }
 }
