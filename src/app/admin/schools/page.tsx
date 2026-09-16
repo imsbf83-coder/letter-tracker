@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, getDeskTitle } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
-import { deleteSchoolAction } from "@/lib/actions/admin-actions";
 import AddSchoolForm from "./AddSchoolForm";
+import SchoolRow from "./SchoolRow";
 
 export default async function AdminSchoolsPage() {
   const session = await requireAdmin();
@@ -30,18 +30,7 @@ export default async function AdminSchoolsPage() {
           </thead>
           <tbody>
             {schools.map((s) => (
-              <tr key={s.id} className="border-t border-line">
-                <td className="px-4 py-3">{s.name}</td>
-                <td className="px-4 py-3 text-ink-soft">{s.code ?? "—"}</td>
-                <td className="px-4 py-3 text-right">
-                  <form action={deleteSchoolAction}>
-                    <input type="hidden" name="id" value={s.id} />
-                    <button className="text-xs text-vermillion underline underline-offset-2">
-                      Remove
-                    </button>
-                  </form>
-                </td>
-              </tr>
+              <SchoolRow key={s.id} school={s} />
             ))}
           </tbody>
         </table>

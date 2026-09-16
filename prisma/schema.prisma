@@ -1,38 +1,97 @@
-model Letter {
-  id           String           @id @default(cuid())
-  letterNo     String           // Official Letter Reference / Tracking No.
-  subject      String
-  description  String?
-  schoolId     String
-  school       School           @relation(fields: [schoolId], references: [id])
-  currentDeskId String
-  currentDesk  Desk             @relation("CurrentDesk", fields: [currentDeskId], references: [id])
-  status       LetterStatus     @default(PENDING)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  
-  // Historical trail of all movements
-  trails       LetterTrail[]
+generator client {
+  provider = "prisma-client-js"
 }
 
-model LetterTrail {
-  id           String       @id @default(cuid())
-  letterId     String
-  letter       Letter       @relation(fields: [letterId], references: [id], onDelete: Cascade)
-  fromDeskId   String?
-  fromDesk     Desk?        @relation("SentTrails", fields: [fromDeskId], references: [id])
-  toDeskId     String
-  toDesk       Desk         @relation("ReceivedTrails", fields: [toDeskId], references: [id])
-  actionByUserId String
-  actionByUser User         @relation(fields: [actionByUserId], references: [id])
-  dispatchNo   String?      // Outward/Inward Letter No. for this movement step
-  remarks      String?
-  timestamp    DateTime     @default(now())
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  code      String?  @unique
+  contact   String?
+  createdAt DateTime @default(now())
+  letters   Letter[]
+}
+
+model Desk {
+  id            String     @id @default(cuid())
+  title         String     @unique
+  createdAt     DateTime   @default(now())
+  letters       Letter[]   @relation("CurrentDesk")
+  initialFor    Letter[]   @relation("InitialDesk")
+  movementsFrom Movement[] @relation("FromDesk")
+  movementsTo   Movement[] @relation("ToDesk")
+  users         User[]
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  username     String     @unique
+  passwordHash String
+  role         Role       @default(DESK)
+  deskId       String?
+  createdAt    DateTime   @default(now())
+  letters      Letter[]   @relation("CreatedBy")
+  movements    Movement[] @relation("MovedBy")
+  desk         Desk?      @relation(fields: [deskId], references: [id])
+}
+
+model Letter {
+  id            String       @id @default(cuid())
+  diaryNo       String
+  dateReceived  DateTime
+  schoolId      String
+  receivedFrom  String
+  subject       String
+  initialDeskId String
+  currentDeskId String
+  status        LetterStatus @default(PENDING)
+  createdById   String
+  createdAt     DateTime     @default(now())
+  closedAt      DateTime?
+  createdBy     User         @relation("CreatedBy", fields: [createdById], references: [id])
+  currentDesk   Desk         @relation("CurrentDesk", fields: [currentDeskId], references: [id])
+  initialDesk   Desk         @relation("InitialDesk", fields: [initialDeskId], references: [id])
+  school        School       @relation(fields: [schoolId], references: [id])
+  movements     Movement[]
+
+  @@index([schoolId])
+  @@index([currentDeskId])
+  @@index([status])
+}
+
+model Movement {
+  id         String         @id @default(cuid())
+  letterId   String
+  fromDeskId String
+  toDeskId   String?
+  action     MovementAction
+  remarks    String?
+  movedById  String
+  createdAt  DateTime       @default(now())
+  fromDesk   Desk           @relation("FromDesk", fields: [fromDeskId], references: [id])
+  letter     Letter         @relation(fields: [letterId], references: [id])
+  movedBy    User           @relation("MovedBy", fields: [movedById], references: [id])
+  toDesk     Desk?          @relation("ToDesk", fields: [toDeskId], references: [id])
+
+  @@index([letterId])
+}
+
+enum Role {
+  ADMIN
+  DESK
 }
 
 enum LetterStatus {
   PENDING
-  IN_TRANSIT
-  RESOLVED
-  RETURNED
+  CLOSED
+}
+
+enum MovementAction {
+  FORWARD
+  CLOSE
 }

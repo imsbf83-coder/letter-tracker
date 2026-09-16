@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, getDeskTitle } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
-import { deleteUserAction } from "@/lib/actions/admin-actions";
 import AddUserForm from "./AddUserForm";
+import UserRow from "./UserRow";
 
 export default async function AdminUsersPage() {
   const session = await requireAdmin();
@@ -37,22 +37,18 @@ export default async function AdminUsersPage() {
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="border-t border-line">
-                <td className="px-4 py-3">{u.name}</td>
-                <td className="px-4 py-3 text-ink-soft">{u.username}</td>
-                <td className="px-4 py-3">{u.role}</td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {u.desk?.title ?? "—"}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <form action={deleteUserAction}>
-                    <input type="hidden" name="id" value={u.id} />
-                    <button className="text-xs text-vermillion underline underline-offset-2">
-                      Remove
-                    </button>
-                  </form>
-                </td>
-              </tr>
+              <UserRow
+                key={u.id}
+                user={{
+                  id: u.id,
+                  name: u.name,
+                  username: u.username,
+                  role: u.role,
+                  deskId: u.deskId,
+                  deskTitle: u.desk?.title ?? null,
+                }}
+                desks={desks.map((d) => ({ id: d.id, title: d.title }))}
+              />
             ))}
           </tbody>
         </table>

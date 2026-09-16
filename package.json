@@ -8,7 +8,7 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -35,11 +35,5 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5"
-  }
-{
-  "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "postinstall": "prisma generate"
   }
 }
