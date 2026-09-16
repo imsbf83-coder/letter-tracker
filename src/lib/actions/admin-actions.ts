@@ -254,6 +254,48 @@ export async function addUserAction(
   revalidatePath("/admin/users");
 }
 
+export async function updateUserAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const username = String(formData.get("username") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const role = String(formData.get("role") ?? "DESK") as "ADMIN" | "DESK";
+  const deskId = String(formData.get("deskId") ?? "") || null;
+
+  if (!id) return { error: "Missing user id." };
+  if (!name || !username) {
+    return { error: "Name and username are required." };
+  }
+  if (role === "DESK" && !deskId) {
+    return { error: "Choose a desk for this user." };
+  }
+
+  const clash = await prisma.user.findFirst({
+    where: { username, NOT: { id } },
+  });
+  if (clash) return { error: "That username is already taken." };
+
+  // Password field is optional on edit — only rehash and update it if the
+  // admin actually typed a new one.
+  const passwordHash = password ? await hashPassword(password) : undefined;
+
+  await prisma.user.update({
+    where: { id },
+    data: {
+      name,
+      username,
+      role,
+      deskId: role === "ADMIN" ? null : deskId,
+      ...(passwordHash ? { passwordHash } : {}),
+    },
+  });
+  revalidatePath("/admin/users");
+}
+
 export async function deleteUserAction(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
