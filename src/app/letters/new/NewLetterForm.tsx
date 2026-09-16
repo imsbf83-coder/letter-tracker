@@ -24,52 +24,49 @@ export default function NewLetterForm({
       action={formAction}
       className="bg-paper-raised border border-line rounded-sm p-6 space-y-5 max-w-xl"
     >
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1">
-            Diary number{" "}
-            <span className="text-ink-soft font-normal">
-              (your office's receiving no.)
-            </span>
-          </label>
-          <input
-            name="diaryNo"
-            required
-            placeholder="e.g. 1284/2026"
-            className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1">
-            Their letter no.{" "}
-            <span className="text-ink-soft font-normal">(if any)</span>
-          </label>
-          <input
-            name="senderLetterNo"
-            placeholder="e.g. school's own ref no."
-            className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1">
-            Date received
-          </label>
-          <input
-            name="dateReceived"
-            type="date"
-            required
-            defaultValue={today}
-            className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-ink mb-1">
+          Date received
+        </label>
+        <input
+          name="dateReceived"
+          type="date"
+          required
+          defaultValue={today}
+          className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+        />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-ink mb-1">
-          School
+          Diary no.{" "}
+          <span className="text-ink-soft font-normal">
+            (your office's receiving no.)
+          </span>
+        </label>
+        <input
+          name="diaryNo"
+          required
+          placeholder="e.g. 1284/2026"
+          className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-ink mb-1">
+          Letter no. / Ref no.{" "}
+          <span className="text-ink-soft font-normal">(if any)</span>
+        </label>
+        <input
+          name="senderLetterNo"
+          placeholder="e.g. school's own ref no."
+          className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-ink mb-1">
+          Received from
         </label>
         <select
           name="schoolId"
@@ -90,7 +87,7 @@ export default function NewLetterForm({
 
       <div>
         <label className="block text-sm font-medium text-ink mb-1">
-          Received from (name / designation at the school)
+          Sent by
         </label>
         <input
           name="receivedFrom"
