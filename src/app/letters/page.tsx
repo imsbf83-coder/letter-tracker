@@ -114,6 +114,11 @@ export default async function LettersPage({
                     >
                       {letter.diaryNo}
                     </Link>
+                    {letter.senderLetterNo && (
+                      <p className="diary-no text-xs text-ink-soft mt-0.5">
+                        {letter.senderLetterNo}
+                      </p>
+                    )}
                   </td>
                   <td className="px-4 py-3">{letter.school.name}</td>
                   <td className="px-4 py-3 max-w-xs truncate">

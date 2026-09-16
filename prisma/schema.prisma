@@ -1,3 +1,5 @@
+// Letter/File Tracking System — database schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,83 +9,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// A school that sends/receives letters
 model School {
   id        String   @id @default(cuid())
   name      String
   code      String?  @unique
   contact   String?
   createdAt DateTime @default(now())
-  letters   Letter[]
+
+  letters Letter[]
 }
 
+// A "desk" — a designation/seat that a letter can be marked to.
+// Users are assigned to a desk. Desks are what the office actually tracks
+// movement between (not individual people), matching how e-office works.
 model Desk {
-  id            String     @id @default(cuid())
-  title         String     @unique
-  createdAt     DateTime   @default(now())
-  letters       Letter[]   @relation("CurrentDesk")
-  initialFor    Letter[]   @relation("InitialDesk")
-  movementsFrom Movement[] @relation("FromDesk")
-  movementsTo   Movement[] @relation("ToDesk")
-  users         User[]
-}
+  id        String   @id @default(cuid())
+  title     String   @unique // e.g. "Section Officer (Admin)"
+  createdAt DateTime @default(now())
 
-model User {
-  id           String     @id @default(cuid())
-  name         String
-  username     String     @unique
-  passwordHash String
-  role         Role       @default(DESK)
-  deskId       String?
-  createdAt    DateTime   @default(now())
-  letters      Letter[]   @relation("CreatedBy")
-  movements    Movement[] @relation("MovedBy")
-  desk         Desk?      @relation(fields: [deskId], references: [id])
-}
-
-model Letter {
-  id            String       @id @default(cuid())
-  diaryNo       String
-  dateReceived  DateTime
-  schoolId      String
-  receivedFrom  String
-  subject       String
-  initialDeskId String
-  currentDeskId String
-  status        LetterStatus @default(PENDING)
-  createdById   String
-  createdAt     DateTime     @default(now())
-  closedAt      DateTime?
-  createdBy     User         @relation("CreatedBy", fields: [createdById], references: [id])
-  currentDesk   Desk         @relation("CurrentDesk", fields: [currentDeskId], references: [id])
-  initialDesk   Desk         @relation("InitialDesk", fields: [initialDeskId], references: [id])
-  school        School       @relation(fields: [schoolId], references: [id])
-  movements     Movement[]
-
-  @@index([schoolId])
-  @@index([currentDeskId])
-  @@index([status])
-}
-
-model Movement {
-  id         String         @id @default(cuid())
-  letterId   String
-  fromDeskId String
-  toDeskId   String?
-  action     MovementAction
-  remarks    String?
-  movedById  String
-  createdAt  DateTime       @default(now())
-  fromDesk   Desk           @relation("FromDesk", fields: [fromDeskId], references: [id])
-  letter     Letter         @relation(fields: [letterId], references: [id])
-  movedBy    User           @relation("MovedBy", fields: [movedById], references: [id])
-  toDesk     Desk?          @relation("ToDesk", fields: [toDeskId], references: [id])
-
-  @@index([letterId])
+  users            User[]
+  letters          Letter[]        @relation("CurrentDesk")
+  initialFor       Letter[]        @relation("InitialDesk")
+  movementsFrom    Movement[]      @relation("FromDesk")
+  movementsTo      Movement[]      @relation("ToDesk")
 }
 
 enum Role {
-  ADMIN
-  DESK
+  ADMIN // manages schools/desks/users, sees everything
+  DESK // normal user tied to one desk
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  passwordHash String
+  role         Role     @default(DESK)
+  deskId       String?
+  desk         Desk?    @relation(fields: [deskId], references: [id])
+  createdAt    DateTime @default(now())
+
+  letters   Letter[]   @relation("CreatedBy")
+  movements Movement[] @relation("MovedBy")
 }
 
 enum LetterStatus {
@@ -91,7 +59,52 @@ enum LetterStatus {
   CLOSED
 }
 
+model Letter {
+  id             String       @id @default(cuid())
+  diaryNo        String // your office's own receiving/register number
+  senderLetterNo String? // the letter no. already printed on the incoming letter, if any
+  dateReceived   DateTime
+  schoolId       String
+  school         School       @relation(fields: [schoolId], references: [id])
+  receivedFrom   String // name/designation of the person at the school
+  subject        String
+  initialDeskId  String
+  initialDesk    Desk         @relation("InitialDesk", fields: [initialDeskId], references: [id])
+  currentDeskId  String
+  currentDesk    Desk         @relation("CurrentDesk", fields: [currentDeskId], references: [id])
+  status         LetterStatus @default(PENDING)
+  createdById    String
+  createdBy      User         @relation("CreatedBy", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  closedAt       DateTime?
+
+  movements Movement[]
+
+  @@index([schoolId])
+  @@index([currentDeskId])
+  @@index([status])
+}
+
 enum MovementAction {
   FORWARD
   CLOSE
+}
+
+model Movement {
+  id         String         @id @default(cuid())
+  letterId   String
+  letter     Letter         @relation(fields: [letterId], references: [id])
+  fromDeskId String
+  fromDesk   Desk           @relation("FromDesk", fields: [fromDeskId], references: [id])
+  toDeskId   String? // null when action is CLOSE
+  toDesk     Desk?          @relation("ToDesk", fields: [toDeskId], references: [id])
+  action     MovementAction
+  letterNo   String? // outgoing/dispatch letter no., if one was issued at this step
+  sentTo     String? // external office/person the reply was sent to, if closed externally
+  remarks    String?
+  movedById  String
+  movedBy    User           @relation("MovedBy", fields: [movedById], references: [id])
+  createdAt  DateTime       @default(now())
+
+  @@index([letterId])
 }

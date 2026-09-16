@@ -1,58 +1,168 @@
-"use client"
+"use client";
 
-import { moveLetter } from "@/lib/actions/letter-actions"
+import { useActionState, useState } from "react";
+import {
+  forwardLetterAction,
+  closeLetterAction,
+} from "@/lib/actions/letter-actions";
 
-interface Props {
-  letterId: string
-  currentDeskId: string
-  desks: Array<{ id: string; name: string }>
-  userId: string
-}
+export default function MovementForm({
+  letterId,
+  currentDeskId,
+  desks,
+}: {
+  letterId: string;
+  currentDeskId: string;
+  desks: { id: string; title: string }[];
+}) {
+  const [mode, setMode] = useState<"forward" | "close">("forward");
+  const [forwardState, forwardAction, forwardPending] = useActionState(
+    forwardLetterAction,
+    undefined
+  );
+  const [closeState, closeAction, closePending] = useActionState(
+    closeLetterAction,
+    undefined
+  );
 
-export default function MovementForm({ letterId, desks, userId }: Props) {
+  const otherDesks = desks.filter((d) => d.id !== currentDeskId);
+
   return (
-    <form action={moveLetter} className="space-y-4">
-      <input type="hidden" name="letterId" value={letterId} />
-      <input type="hidden" name="userId" value={userId} />
-
-      <div>
-        <label className="block text-sm font-medium">Dispatch / Outward No.</label>
-        <input
-          type="text"
-          name="dispatchNo"
-          placeholder="e.g. OUT-2026-88"
-          className="w-full border p-2 rounded"
-          required
-        />
+    <div className="bg-paper-raised border border-line rounded-sm p-5 max-w-xl">
+      <div className="flex gap-2 mb-4">
+        <button
+          type="button"
+          onClick={() => setMode("forward")}
+          className={`text-sm px-3 py-1.5 rounded-sm border ${
+            mode === "forward"
+              ? "bg-ink text-paper border-ink"
+              : "border-line text-ink-soft"
+          }`}
+        >
+          Mark to next desk
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("close")}
+          className={`text-sm px-3 py-1.5 rounded-sm border ${
+            mode === "close"
+              ? "bg-ink text-paper border-ink"
+              : "border-line text-ink-soft"
+          }`}
+        >
+          Close / dispose
+        </button>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium">Forward to Desk</label>
-        <select name="toDeskId" className="w-full border p-2 rounded" required>
-          <option value="">Select Target Desk</option>
-          {desks.map((desk) => (
-            <option key={desk.id} value={desk.id}>
-              {desk.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">Remarks</label>
-        <textarea
-          name="remarks"
-          placeholder="Add comments or instructions..."
-          className="w-full border p-2 rounded"
-        />
-      </div>
-
-      <button
-        type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        Forward Letter
-      </button>
-    </form>
-  )
+      {mode === "forward" ? (
+        <form action={forwardAction} className="space-y-4">
+          <input type="hidden" name="letterId" value={letterId} />
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">
+              Mark to
+            </label>
+            <select
+              name="toDeskId"
+              required
+              defaultValue=""
+              className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            >
+              <option value="" disabled>
+                Select a desk…
+              </option>
+              {otherDesks.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">
+              Outgoing letter no.{" "}
+              <span className="text-ink-soft font-normal">
+                (only if you're issuing a reply/dispatch at this step)
+              </span>
+            </label>
+            <input
+              name="letterNo"
+              placeholder="e.g. 456/2026"
+              className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">
+              Remarks
+            </label>
+            <textarea
+              name="remarks"
+              rows={2}
+              className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            />
+          </div>
+          {forwardState?.error && (
+            <p className="text-sm text-vermillion">{forwardState.error}</p>
+          )}
+          <button
+            type="submit"
+            disabled={forwardPending}
+            className="bg-ink text-paper font-medium rounded-sm px-5 py-2 hover:bg-ink-soft transition-colors disabled:opacity-60"
+          >
+            {forwardPending ? "Marking…" : "Mark forward"}
+          </button>
+        </form>
+      ) : (
+        <form action={closeAction} className="space-y-4">
+          <input type="hidden" name="letterId" value={letterId} />
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">
+              Outgoing letter no.{" "}
+              <span className="text-ink-soft font-normal">
+                (if a final reply/dispatch was issued)
+              </span>
+            </label>
+            <input
+              name="letterNo"
+              placeholder="e.g. 456/2026"
+              className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">
+              Sent to{" "}
+              <span className="text-ink-soft font-normal">
+                (external office/person, if applicable)
+              </span>
+            </label>
+            <input
+              name="sentTo"
+              placeholder="e.g. the school, or another department"
+              className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">
+              Closing remarks
+            </label>
+            <textarea
+              name="remarks"
+              rows={2}
+              placeholder="e.g. Replied to school vide letter no. …"
+              className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            />
+          </div>
+          {closeState?.error && (
+            <p className="text-sm text-vermillion">{closeState.error}</p>
+          )}
+          <button
+            type="submit"
+            disabled={closePending}
+            className="bg-forest text-paper font-medium rounded-sm px-5 py-2 hover:opacity-90 transition-opacity disabled:opacity-60"
+          >
+            {closePending ? "Closing…" : "Close this letter"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
 }

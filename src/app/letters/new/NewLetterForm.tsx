@@ -27,7 +27,10 @@ export default function NewLetterForm({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-ink mb-1">
-            Diary number
+            Diary number{" "}
+            <span className="text-ink-soft font-normal">
+              (your office's receiving no.)
+            </span>
           </label>
           <input
             name="diaryNo"
@@ -36,6 +39,20 @@ export default function NewLetterForm({
             className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-ink mb-1">
+            Their letter no.{" "}
+            <span className="text-ink-soft font-normal">(if any)</span>
+          </label>
+          <input
+            name="senderLetterNo"
+            placeholder="e.g. school's own ref no."
+            className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-ink mb-1">
             Date received
