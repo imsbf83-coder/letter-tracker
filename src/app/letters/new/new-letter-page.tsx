@@ -29,7 +29,7 @@ export default async function NewLetterPage() {
         </div>
       ) : (
         <NewLetterForm
-          schools={schools.map((s) => ({ id: s.id, name: s.name }))}
+          schools={schools.map((s) => ({ id: s.id, name: s.name, code: s.code }))}
           desks={desks.map((d) => ({ id: d.id, title: d.title }))}
           defaultDeskId={session.deskId}
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createLetterAction } from "@/lib/actions/letter-actions";
 
 export default function NewLetterForm({
@@ -8,7 +8,7 @@ export default function NewLetterForm({
   desks,
   defaultDeskId,
 }: {
-  schools: { id: string; name: string }[];
+  schools: { id: string; name: string; code: string | null }[];
   desks: { id: string; title: string }[];
   defaultDeskId: string | null;
 }) {
@@ -16,8 +16,11 @@ export default function NewLetterForm({
     createLetterAction,
     undefined
   );
+  const [schoolId, setSchoolId] = useState("");
 
   const today = new Date().toISOString().slice(0, 10);
+  const codedSchools = schools.filter((s) => s.code);
+  const codeValue = codedSchools.some((s) => s.id === schoolId) ? schoolId : "";
 
   return (
     <form
@@ -68,21 +71,47 @@ export default function NewLetterForm({
         <label className="block text-sm font-medium text-ink mb-1">
           Received from
         </label>
-        <select
-          name="schoolId"
-          required
-          defaultValue=""
-          className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
-        >
-          <option value="" disabled>
-            Select a school…
-          </option>
-          {schools.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-ink-soft mb-1">Code</label>
+            <select
+              value={codeValue}
+              onChange={(e) => setSchoolId(e.target.value)}
+              className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            >
+              <option value="">—</option>
+              {codedSchools.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-ink-soft mb-1">
+              School name
+            </label>
+            <select
+              name="schoolId"
+              required
+              value={schoolId}
+              onChange={(e) => setSchoolId(e.target.value)}
+              className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            >
+              <option value="" disabled>
+                Select a school…
+              </option>
+              {schools.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <p className="text-xs text-ink-soft mt-1">
+          Pick either one — the other fills in automatically.
+        </p>
       </div>
 
       <div>
