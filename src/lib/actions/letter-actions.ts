@@ -99,8 +99,18 @@ export async function closeLetterAction(
   const remarks = String(formData.get("remarks") ?? "").trim();
   const letterNo = String(formData.get("letterNo") ?? "").trim();
   const sentTo = String(formData.get("sentTo") ?? "").trim();
+  const disposalType = String(formData.get("disposalType") ?? "");
 
+  const validDisposalTypes = [
+    "REPLIED",
+    "FORWARDED_EXTERNAL",
+    "CLOSED_NO_REPLY",
+    "OTHER",
+  ];
   if (!letterId) return { error: "Letter not found." };
+  if (!validDisposalTypes.includes(disposalType)) {
+    return { error: "Choose what happened with this letter." };
+  }
 
   const letter = await prisma.letter.findUnique({ where: { id: letterId } });
   if (!letter) return { error: "Letter not found." };
@@ -115,6 +125,11 @@ export async function closeLetterAction(
         fromDeskId: letter.currentDeskId,
         toDeskId: null,
         action: "CLOSE",
+        disposalType: disposalType as
+          | "REPLIED"
+          | "FORWARDED_EXTERNAL"
+          | "CLOSED_NO_REPLY"
+          | "OTHER",
         letterNo: letterNo || null,
         sentTo: sentTo || null,
         remarks: remarks || null,

@@ -16,6 +16,7 @@ export default function MovementForm({
   desks: { id: string; title: string }[];
 }) {
   const [mode, setMode] = useState<"forward" | "close">("forward");
+  const [disposalType, setDisposalType] = useState("");
   const [forwardState, forwardAction, forwardPending] = useActionState(
     forwardLetterAction,
     undefined
@@ -116,30 +117,62 @@ export default function MovementForm({
           <input type="hidden" name="letterId" value={letterId} />
           <div>
             <label className="block text-sm font-medium text-ink mb-1">
-              Outgoing letter no.{" "}
-              <span className="text-ink-soft font-normal">
-                (if a final reply/dispatch was issued)
-              </span>
+              What happened with this letter?
             </label>
-            <input
-              name="letterNo"
-              placeholder="e.g. 456/2026"
-              className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1">
-              Sent to{" "}
-              <span className="text-ink-soft font-normal">
-                (external office/person, if applicable)
-              </span>
-            </label>
-            <input
-              name="sentTo"
-              placeholder="e.g. the school, or another department"
+            <select
+              name="disposalType"
+              required
+              value={disposalType}
+              onChange={(e) => setDisposalType(e.target.value)}
               className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
-            />
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              <option value="REPLIED">Reply sent back to the school</option>
+              <option value="FORWARDED_EXTERNAL">
+                Matter forwarded to another department/office
+              </option>
+              <option value="CLOSED_NO_REPLY">
+                Closed after discussion — no reply/forward needed
+              </option>
+              <option value="OTHER">Other</option>
+            </select>
           </div>
+
+          {(disposalType === "REPLIED" ||
+            disposalType === "FORWARDED_EXTERNAL") && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Outgoing letter no.{" "}
+                  <span className="text-ink-soft font-normal">(if any)</span>
+                </label>
+                <input
+                  name="letterNo"
+                  placeholder="e.g. 456/2026"
+                  className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  {disposalType === "REPLIED"
+                    ? "Sent to (person/office at the school)"
+                    : "Sent to (department/office)"}
+                </label>
+                <input
+                  name="sentTo"
+                  placeholder={
+                    disposalType === "REPLIED"
+                      ? "e.g. Headmistress"
+                      : "e.g. name of the department or office"
+                  }
+                  className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+                />
+              </div>
+            </>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-ink mb-1">
               Closing remarks
@@ -147,7 +180,7 @@ export default function MovementForm({
             <textarea
               name="remarks"
               rows={2}
-              placeholder="e.g. Replied to school vide letter no. …"
+              placeholder="Any further detail"
               className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
             />
           </div>

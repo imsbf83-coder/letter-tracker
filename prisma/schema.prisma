@@ -90,21 +90,29 @@ enum MovementAction {
   CLOSE
 }
 
+enum DisposalType {
+  REPLIED // a reply was sent back to the school
+  FORWARDED_EXTERNAL // matter forwarded to another department/office (inside or outside this office's setup)
+  CLOSED_NO_REPLY // closed after discussion, no written reply/forward needed
+  OTHER
+}
+
 model Movement {
-  id         String         @id @default(cuid())
-  letterId   String
-  letter     Letter         @relation(fields: [letterId], references: [id])
-  fromDeskId String
-  fromDesk   Desk           @relation("FromDesk", fields: [fromDeskId], references: [id])
-  toDeskId   String? // null when action is CLOSE
-  toDesk     Desk?          @relation("ToDesk", fields: [toDeskId], references: [id])
-  action     MovementAction
-  letterNo   String? // outgoing/dispatch letter no., if one was issued at this step
-  sentTo     String? // external office/person the reply was sent to, if closed externally
-  remarks    String?
-  movedById  String
-  movedBy    User           @relation("MovedBy", fields: [movedById], references: [id])
-  createdAt  DateTime       @default(now())
+  id           String         @id @default(cuid())
+  letterId     String
+  letter       Letter         @relation(fields: [letterId], references: [id])
+  fromDeskId   String
+  fromDesk     Desk           @relation("FromDesk", fields: [fromDeskId], references: [id])
+  toDeskId     String? // null when action is CLOSE
+  toDesk       Desk?          @relation("ToDesk", fields: [toDeskId], references: [id])
+  action       MovementAction
+  disposalType DisposalType? // only set when action is CLOSE — what happened to the letter
+  letterNo     String? // outgoing/dispatch letter no., if one was issued at this step
+  sentTo       String? // external office/person the reply was sent to, if closed externally
+  remarks      String?
+  movedById    String
+  movedBy      User           @relation("MovedBy", fields: [movedById], references: [id])
+  createdAt    DateTime       @default(now())
 
   @@index([letterId])
 }

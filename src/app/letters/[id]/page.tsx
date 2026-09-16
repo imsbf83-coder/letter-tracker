@@ -4,6 +4,19 @@ import { requireSession, getDeskTitle } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import MovementForm from "./MovementForm";
 
+function disposalLabel(type: string) {
+  switch (type) {
+    case "REPLIED":
+      return "Reply sent back to the school";
+    case "FORWARDED_EXTERNAL":
+      return "Matter forwarded to another department/office";
+    case "CLOSED_NO_REPLY":
+      return "Closed after discussion — no reply/forward needed";
+    default:
+      return "Closed";
+  }
+}
+
 export default async function LetterDetailPage({
   params,
 }: {
@@ -131,6 +144,11 @@ export default async function LetterDetailPage({
                 ? `closed the letter from ${m.fromDesk.title}`
                 : `marked it from ${m.fromDesk.title} to ${m.toDesk?.title}`}
             </p>
+            {m.disposalType && (
+              <p className="text-sm text-forest font-medium mt-0.5">
+                {disposalLabel(m.disposalType)}
+              </p>
+            )}
             {m.letterNo && (
               <p className="diary-no text-sm text-brass mt-0.5">
                 Outgoing letter no. {m.letterNo}
