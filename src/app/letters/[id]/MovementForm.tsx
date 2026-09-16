@@ -137,6 +137,9 @@ export default function MovementForm({
               <option value="CLOSED_NO_REPLY">
                 Closed after discussion — no reply/forward needed
               </option>
+              <option value="ACTION_TAKEN">
+                Action taken (describe below)
+              </option>
               <option value="OTHER">Other</option>
             </select>
           </div>

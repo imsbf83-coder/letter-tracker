@@ -12,6 +12,8 @@ function disposalLabel(type: string) {
       return "Matter forwarded to another department/office";
     case "CLOSED_NO_REPLY":
       return "Closed after discussion — no reply/forward needed";
+    case "ACTION_TAKEN":
+      return "Action taken";
     default:
       return "Closed";
   }

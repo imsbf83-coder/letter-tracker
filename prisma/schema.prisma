@@ -94,6 +94,7 @@ enum DisposalType {
   REPLIED // a reply was sent back to the school
   FORWARDED_EXTERNAL // matter forwarded to another department/office (inside or outside this office's setup)
   CLOSED_NO_REPLY // closed after discussion, no written reply/forward needed
+  ACTION_TAKEN // some other action was taken, described in remarks
   OTHER
 }
 

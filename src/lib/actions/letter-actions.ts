@@ -4,8 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/require-session";
+import type { SessionPayload } from "@/lib/auth";
 
 export type FormState = { error?: string } | undefined;
+
+function canActOnDesk(session: SessionPayload, currentDeskId: string) {
+  return session.role === "ADMIN" || session.deskId === currentDeskId;
+}
 
 export async function createLetterAction(
   _prevState: FormState,
@@ -65,6 +70,9 @@ export async function forwardLetterAction(
   if (letter.status === "CLOSED") {
     return { error: "This letter is already closed." };
   }
+  if (!canActOnDesk(session, letter.currentDeskId)) {
+    return { error: "This letter isn't at your desk." };
+  }
 
   await prisma.$transaction([
     prisma.movement.create({
@@ -89,6 +97,65 @@ export async function forwardLetterAction(
   revalidatePath("/letters");
 }
 
+// Forward several letters to the same desk at once, from the dashboard's
+// quick-action bar. Silently skips any letter the user can't act on or that
+// is already closed, and reports how many actually moved.
+export async function bulkForwardAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const session = await requireSession();
+
+  const letterIds = formData.getAll("letterIds").map(String).filter(Boolean);
+  const toDeskId = String(formData.get("toDeskId") ?? "");
+
+  if (letterIds.length === 0) {
+    return { error: "Select at least one letter." };
+  }
+  if (!toDeskId) {
+    return { error: "Choose a desk to mark the selected letters to." };
+  }
+
+  const letters = await prisma.letter.findMany({
+    where: { id: { in: letterIds } },
+  });
+
+  const actionable = letters.filter(
+    (l) => l.status === "PENDING" && canActOnDesk(session, l.currentDeskId)
+  );
+
+  if (actionable.length === 0) {
+    return { error: "None of the selected letters could be moved." };
+  }
+
+  await prisma.$transaction(
+    actionable.flatMap((letter) => [
+      prisma.movement.create({
+        data: {
+          letterId: letter.id,
+          fromDeskId: letter.currentDeskId,
+          toDeskId,
+          action: "FORWARD",
+          movedById: session.userId,
+        },
+      }),
+      prisma.letter.update({
+        where: { id: letter.id },
+        data: { currentDeskId: toDeskId },
+      }),
+    ])
+  );
+
+  revalidatePath("/dashboard");
+  revalidatePath("/letters");
+
+  if (actionable.length < letterIds.length) {
+    return {
+      error: `Moved ${actionable.length} of ${letterIds.length} selected letters — the rest weren't at your desk or were already closed.`,
+    };
+  }
+}
+
 export async function closeLetterAction(
   _prevState: FormState,
   formData: FormData
@@ -105,6 +172,7 @@ export async function closeLetterAction(
     "REPLIED",
     "FORWARDED_EXTERNAL",
     "CLOSED_NO_REPLY",
+    "ACTION_TAKEN",
     "OTHER",
   ];
   if (!letterId) return { error: "Letter not found." };
@@ -116,6 +184,9 @@ export async function closeLetterAction(
   if (!letter) return { error: "Letter not found." };
   if (letter.status === "CLOSED") {
     return { error: "This letter is already closed." };
+  }
+  if (!canActOnDesk(session, letter.currentDeskId)) {
+    return { error: "This letter isn't at your desk." };
   }
 
   await prisma.$transaction([
@@ -129,6 +200,7 @@ export async function closeLetterAction(
           | "REPLIED"
           | "FORWARDED_EXTERNAL"
           | "CLOSED_NO_REPLY"
+          | "ACTION_TAKEN"
           | "OTHER",
         letterNo: letterNo || null,
         sentTo: sentTo || null,

@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireSession, getDeskTitle } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
+import DashboardTable from "./DashboardTable";
 
 export default async function DashboardPage() {
   const session = await requireSession();
@@ -12,7 +12,7 @@ export default async function DashboardPage() {
       ? { status: "PENDING" as const }
       : { status: "PENDING" as const, currentDeskId: session.deskId ?? "" };
 
-  const [pendingAtDesk, pendingTotal, closedTotal] = await Promise.all([
+  const [pendingAtDesk, pendingTotal, closedTotal, desks] = await Promise.all([
     prisma.letter.findMany({
       where: whereClause,
       include: { school: true, currentDesk: true },
@@ -20,6 +20,7 @@ export default async function DashboardPage() {
     }),
     prisma.letter.count({ where: { status: "PENDING" } }),
     prisma.letter.count({ where: { status: "CLOSED" } }),
+    prisma.desk.findMany({ orderBy: { title: "asc" } }),
   ]);
 
   return (
@@ -53,46 +54,19 @@ export default async function DashboardPage() {
           Nothing waiting here right now.
         </div>
       ) : (
-        <div className="border border-line rounded-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-paper-raised text-left text-ink-soft text-xs uppercase tracking-wide">
-              <tr>
-                <th className="px-4 py-2 font-medium">Diary No.</th>
-                <th className="px-4 py-2 font-medium">School</th>
-                <th className="px-4 py-2 font-medium">Subject</th>
-                {session.role === "ADMIN" && (
-                  <th className="px-4 py-2 font-medium">Currently at</th>
-                )}
-                <th className="px-4 py-2 font-medium">Received</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingAtDesk.map((letter) => (
-                <tr
-                  key={letter.id}
-                  className="border-t border-line hover:bg-paper-raised/60"
-                >
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/letters/${letter.id}`}
-                      className="diary-no text-sm text-ink underline underline-offset-2"
-                    >
-                      {letter.diaryNo}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">{letter.school.name}</td>
-                  <td className="px-4 py-3">{letter.subject}</td>
-                  {session.role === "ADMIN" && (
-                    <td className="px-4 py-3">{letter.currentDesk.title}</td>
-                  )}
-                  <td className="px-4 py-3 text-ink-soft">
-                    {letter.dateReceived.toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DashboardTable
+          letters={pendingAtDesk.map((letter) => ({
+            id: letter.id,
+            diaryNo: letter.diaryNo,
+            schoolName: letter.school.name,
+            subject: letter.subject,
+            currentDeskId: letter.currentDeskId,
+            currentDeskTitle: letter.currentDesk.title,
+            dateReceived: letter.dateReceived.toLocaleDateString(),
+          }))}
+          desks={desks.map((d) => ({ id: d.id, title: d.title }))}
+          isAdmin={session.role === "ADMIN"}
+        />
       )}
     </AppShell>
   );
