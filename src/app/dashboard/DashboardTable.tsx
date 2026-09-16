@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { bulkForwardAction } from "@/lib/actions/letter-actions";
 
@@ -27,38 +27,13 @@ export default function DashboardTable({
     bulkForwardAction,
     undefined
   );
-  const formRef = useRef<HTMLFormElement>(null);
-
-  function toggleAll(checked: boolean) {
-    const boxes = formRef.current?.querySelectorAll<HTMLInputElement>(
-      'input[name="letterIds"]'
-    );
-    boxes?.forEach((box) => {
-      box.checked = checked;
-    });
-  }
 
   return (
-    <form ref={formRef} action={formAction}>
-      <div className="flex flex-wrap items-center gap-3 mb-3 bg-paper-raised border border-line rounded-sm px-4 py-3">
-        <span className="text-sm text-ink-soft">
-          Select letters below, then:
-        </span>
-        <select
-          name="toDeskId"
-          required
-          defaultValue=""
-          className="border border-line rounded-sm px-3 py-1.5 bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-ink"
-        >
-          <option value="" disabled>
-            Mark to…
-          </option>
-          {desks.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.title}
-            </option>
-          ))}
-        </select>
+    <form action={formAction}>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <p className="text-sm text-ink-soft">
+          Check one or more letters, pick where each should go, then submit.
+        </p>
         <button
           type="submit"
           disabled={pending}
@@ -66,22 +41,17 @@ export default function DashboardTable({
         >
           {pending ? "Marking…" : "Mark selected"}
         </button>
-        {state?.error && (
-          <p className="text-sm text-vermillion w-full">{state.error}</p>
-        )}
       </div>
+      {state?.error && (
+        <p className="text-sm text-vermillion mb-3">{state.error}</p>
+      )}
 
       <div className="border border-line rounded-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-paper-raised text-left text-ink-soft text-xs uppercase tracking-wide">
             <tr>
-              <th className="px-4 py-2 font-medium w-8">
-                <input
-                  type="checkbox"
-                  aria-label="Select all"
-                  onChange={(e) => toggleAll(e.target.checked)}
-                />
-              </th>
+              <th className="px-4 py-2 font-medium w-8" />
+              <th className="px-4 py-2 font-medium">Mark to</th>
               <th className="px-4 py-2 font-medium">Diary No.</th>
               <th className="px-4 py-2 font-medium">Received from</th>
               <th className="px-4 py-2 font-medium">Subject</th>
@@ -98,7 +68,25 @@ export default function DashboardTable({
                 className="border-t border-line hover:bg-paper-raised/60"
               >
                 <td className="px-4 py-3">
-                  <input type="checkbox" name="letterIds" value={letter.id} />
+                  <input type="checkbox" name="selected" value={letter.id} />
+                </td>
+                <td className="px-4 py-3">
+                  <select
+                    name={`desk-${letter.id}`}
+                    defaultValue=""
+                    className="border border-line rounded-sm px-2 py-1 bg-white text-ink text-xs focus:outline-none focus:ring-2 focus:ring-ink"
+                  >
+                    <option value="" disabled>
+                      Select…
+                    </option>
+                    {desks
+                      .filter((d) => d.id !== letter.currentDeskId)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.title}
+                        </option>
+                      ))}
+                  </select>
                 </td>
                 <td className="px-4 py-3">
                   <Link

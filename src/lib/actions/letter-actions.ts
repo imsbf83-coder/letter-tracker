@@ -97,27 +97,33 @@ export async function forwardLetterAction(
   revalidatePath("/letters");
 }
 
-// Forward several letters to the same desk at once, from the dashboard's
-// quick-action bar. Silently skips any letter the user can't act on or that
-// is already closed, and reports how many actually moved.
+// Forward each checked letter to whatever desk was chosen in its own row,
+// from the dashboard's per-row quick action. Silently skips any letter the
+// user can't act on or that is already closed, and reports how many moved.
 export async function bulkForwardAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const session = await requireSession();
 
-  const letterIds = formData.getAll("letterIds").map(String).filter(Boolean);
-  const toDeskId = String(formData.get("toDeskId") ?? "");
+  const letterIds = formData.getAll("selected").map(String).filter(Boolean);
 
   if (letterIds.length === 0) {
     return { error: "Select at least one letter." };
   }
-  if (!toDeskId) {
-    return { error: "Choose a desk to mark the selected letters to." };
+
+  const targets = new Map<string, string>();
+  for (const letterId of letterIds) {
+    const toDeskId = String(formData.get(`desk-${letterId}`) ?? "");
+    if (toDeskId) targets.set(letterId, toDeskId);
+  }
+
+  if (targets.size === 0) {
+    return { error: "Choose a desk for each selected letter." };
   }
 
   const letters = await prisma.letter.findMany({
-    where: { id: { in: letterIds } },
+    where: { id: { in: [...targets.keys()] } },
   });
 
   const actionable = letters.filter(
@@ -129,21 +135,24 @@ export async function bulkForwardAction(
   }
 
   await prisma.$transaction(
-    actionable.flatMap((letter) => [
-      prisma.movement.create({
-        data: {
-          letterId: letter.id,
-          fromDeskId: letter.currentDeskId,
-          toDeskId,
-          action: "FORWARD",
-          movedById: session.userId,
-        },
-      }),
-      prisma.letter.update({
-        where: { id: letter.id },
-        data: { currentDeskId: toDeskId },
-      }),
-    ])
+    actionable.flatMap((letter) => {
+      const toDeskId = targets.get(letter.id)!;
+      return [
+        prisma.movement.create({
+          data: {
+            letterId: letter.id,
+            fromDeskId: letter.currentDeskId,
+            toDeskId,
+            action: "FORWARD",
+            movedById: session.userId,
+          },
+        }),
+        prisma.letter.update({
+          where: { id: letter.id },
+          data: { currentDeskId: toDeskId },
+        }),
+      ];
+    })
   );
 
   revalidatePath("/dashboard");
@@ -151,7 +160,7 @@ export async function bulkForwardAction(
 
   if (actionable.length < letterIds.length) {
     return {
-      error: `Moved ${actionable.length} of ${letterIds.length} selected letters — the rest weren't at your desk or were already closed.`,
+      error: `Moved ${actionable.length} of ${letterIds.length} selected letters — the rest weren't at your desk, already closed, or had no desk chosen.`,
     };
   }
 }
