@@ -93,11 +93,12 @@ export default function MovementForm({
           </div>
           <div>
             <label className="block text-sm font-medium text-ink mb-1">
-              Remarks
+              Action taken
             </label>
             <textarea
               name="remarks"
               rows={2}
+              placeholder="What was done before marking it forward"
               className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
             />
           </div>
@@ -175,12 +176,12 @@ export default function MovementForm({
 
           <div>
             <label className="block text-sm font-medium text-ink mb-1">
-              Closing remarks
+              Action taken
             </label>
             <textarea
               name="remarks"
               rows={2}
-              placeholder="Any further detail"
+              placeholder="What was done to close this letter"
               className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
             />
           </div>

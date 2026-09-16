@@ -158,8 +158,9 @@ export default async function LetterDetailPage({
               <p className="text-sm text-ink mt-0.5">Sent to: {m.sentTo}</p>
             )}
             {m.remarks && (
-              <p className="text-sm text-ink-soft italic mt-0.5">
-                &ldquo;{m.remarks}&rdquo;
+              <p className="text-sm text-ink-soft mt-0.5">
+                <span className="font-medium text-ink">Action taken:</span>{" "}
+                {m.remarks}
               </p>
             )}
             <p className="text-xs text-ink-soft">
