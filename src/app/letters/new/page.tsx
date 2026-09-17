@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession, getDeskTitle } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import NewLetterForm from "./NewLetterForm";
+import Link from "next/link";
 
 export default async function NewLetterPage() {
   const session = await requireSession();
@@ -14,9 +15,15 @@ export default async function NewLetterPage() {
 
   return (
     <AppShell session={session} deskTitle={deskTitle}>
-      <h2 className="font-serif text-2xl font-bold text-ink mb-1">
-        New Letter
-      </h2>
+      <div className="flex items-start justify-between mb-1">
+        <h2 className="font-serif text-2xl font-bold text-ink">New Letter</h2>
+        <Link
+          href="/letters/import"
+          className="text-sm text-ink underline underline-offset-2"
+        >
+          Bulk import from CSV →
+        </Link>
+      </div>
       <p className="text-ink-soft text-sm mb-6">
         Record a letter or file as it comes in.
       </p>
@@ -29,7 +36,7 @@ export default async function NewLetterPage() {
         </div>
       ) : (
         <NewLetterForm
-          schools={schools.map((s) => ({ id: s.id, name: s.name, code: s.code }))}
+          schools={schools.map((s) => ({ id: s.id, name: s.name }))}
           desks={desks.map((d) => ({ id: d.id, title: d.title }))}
           defaultDeskId={session.deskId}
         />
