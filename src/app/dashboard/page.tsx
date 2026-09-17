@@ -59,6 +59,7 @@ export default async function DashboardPage() {
             id: letter.id,
             diaryNo: letter.diaryNo,
             schoolName: letter.school.name,
+            sentBy: letter.receivedFrom,
             subject: letter.subject,
             currentDeskId: letter.currentDeskId,
             currentDeskTitle: letter.currentDesk.title,
