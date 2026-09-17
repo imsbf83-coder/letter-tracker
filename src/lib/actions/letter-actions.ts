@@ -97,16 +97,22 @@ export async function forwardLetterAction(
   revalidatePath("/letters");
 }
 
-// Forward each checked letter to whatever desk was chosen in its own row,
-// from the dashboard's per-row quick action. Silently skips any letter the
-// user can't act on or that is already closed, and reports how many moved.
+// Forward one or more letters to whatever desk was chosen in each of their
+// own rows, from the dashboard. Triggered either by the top "Mark selected"
+// button (acts on every checked row) or by an individual row's own "Mark"
+// button (acts on just that one letter, regardless of what's checked).
+// Silently skips any letter the user can't act on or that is already
+// closed, and reports how many actually moved.
 export async function bulkForwardAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const session = await requireSession();
 
-  const letterIds = formData.getAll("selected").map(String).filter(Boolean);
+  const singleId = String(formData.get("singleId") ?? "");
+  const letterIds = singleId
+    ? [singleId]
+    : formData.getAll("selected").map(String).filter(Boolean);
 
   if (letterIds.length === 0) {
     return { error: "Select at least one letter." };
