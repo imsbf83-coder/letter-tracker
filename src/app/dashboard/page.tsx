@@ -1,16 +1,19 @@
 import { prisma } from "@/lib/prisma";
-import { requireSession, getDeskTitle } from "@/lib/require-session";
+import { requireSession, getDeskTitles } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import DashboardTable from "./DashboardTable";
 
 export default async function DashboardPage() {
   const session = await requireSession();
-  const deskTitle = await getDeskTitle(session.deskId);
+  const deskTitle = await getDeskTitles(session.deskIds);
 
   const whereClause =
     session.role === "ADMIN"
       ? { status: "PENDING" as const }
-      : { status: "PENDING" as const, currentDeskId: session.deskId ?? "" };
+      : {
+          status: "PENDING" as const,
+          currentDeskId: { in: session.deskIds ?? [] },
+        };
 
   const [pendingAtDesk, pendingTotal, closedTotal, desks] = await Promise.all([
     prisma.letter.findMany({

@@ -21,8 +21,8 @@ model School {
 }
 
 // A "desk" — a designation/seat that a letter can be marked to.
-// Users are assigned to a desk. Desks are what the office actually tracks
-// movement between (not individual people), matching how e-office works.
+// A user can belong to more than one desk (e.g. covering two roles),
+// so this is a many-to-many relation rather than one desk per user.
 model Desk {
   id        String   @id @default(cuid())
   title     String   @unique // e.g. "Section Officer (Admin)"
@@ -37,7 +37,7 @@ model Desk {
 
 enum Role {
   ADMIN // manages schools/desks/users, sees everything
-  DESK // normal user tied to one desk
+  DESK // normal user, tied to one or more desks
 }
 
 model User {
@@ -46,12 +46,13 @@ model User {
   username     String   @unique
   passwordHash String
   role         Role     @default(DESK)
-  deskId       String?
-  desk         Desk?    @relation(fields: [deskId], references: [id])
+  desks        Desk[] // a DESK-role user can hold more than one desk
   createdAt    DateTime @default(now())
 
-  letters   Letter[]   @relation("CreatedBy")
-  movements Movement[] @relation("MovedBy")
+  letters                   Letter[]           @relation("CreatedBy")
+  movements                 Movement[]         @relation("MovedBy")
+  retrievalRequestsMade     RetrievalRequest[] @relation("RetrievalRequestedBy")
+  retrievalRequestsDecided  RetrievalRequest[] @relation("RetrievalDecidedBy")
 }
 
 enum LetterStatus {
@@ -78,7 +79,8 @@ model Letter {
   createdAt      DateTime     @default(now())
   closedAt       DateTime?
 
-  movements Movement[]
+  movements         Movement[]
+  retrievalRequests RetrievalRequest[]
 
   @@index([schoolId])
   @@index([currentDeskId])
@@ -88,6 +90,7 @@ model Letter {
 enum MovementAction {
   FORWARD
   CLOSE
+  REOPENED // an admin approved a retrieval request, reopening a closed letter
 }
 
 enum DisposalType {
@@ -104,7 +107,7 @@ model Movement {
   letter       Letter         @relation(fields: [letterId], references: [id])
   fromDeskId   String
   fromDesk     Desk           @relation("FromDesk", fields: [fromDeskId], references: [id])
-  toDeskId     String? // null when action is CLOSE
+  toDeskId     String? // null when action is CLOSE or REOPENED
   toDesk       Desk?          @relation("ToDesk", fields: [toDeskId], references: [id])
   action       MovementAction
   disposalType DisposalType? // only set when action is CLOSE — what happened to the letter
@@ -116,4 +119,29 @@ model Movement {
   createdAt    DateTime       @default(now())
 
   @@index([letterId])
+}
+
+enum RetrievalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// A desk user's request to reopen a letter they closed by mistake (or
+// before the final step was actually done). Requires an admin's approval.
+model RetrievalRequest {
+  id            String          @id @default(cuid())
+  letterId      String
+  letter        Letter          @relation(fields: [letterId], references: [id])
+  requestedById String
+  requestedBy   User            @relation("RetrievalRequestedBy", fields: [requestedById], references: [id])
+  reason        String?
+  status        RetrievalStatus @default(PENDING)
+  decidedById   String?
+  decidedBy     User?           @relation("RetrievalDecidedBy", fields: [decidedById], references: [id])
+  decidedAt     DateTime?
+  createdAt     DateTime        @default(now())
+
+  @@index([letterId])
+  @@index([status])
 }

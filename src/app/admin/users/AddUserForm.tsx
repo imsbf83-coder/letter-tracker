@@ -73,23 +73,16 @@ export default function AddUserForm({
       {role === "DESK" && (
         <div>
           <label className="block text-xs font-medium text-ink mb-1">
-            Desk
+            Desks (select one or more)
           </label>
-          <select
-            name="deskId"
-            required
-            defaultValue=""
-            className="border border-line rounded-sm px-3 py-2 bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-ink"
-          >
-            <option value="" disabled>
-              Select…
-            </option>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 border border-line rounded-sm px-3 py-2 bg-white max-w-xs">
             {desks.map((d) => (
-              <option key={d.id} value={d.id}>
+              <label key={d.id} className="flex items-center gap-1.5 text-sm text-ink">
+                <input type="checkbox" name="deskIds" value={d.id} />
                 {d.title}
-              </option>
+              </label>
             ))}
-          </select>
+          </div>
         </div>
       )}
       <button

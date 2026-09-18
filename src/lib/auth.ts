@@ -18,7 +18,7 @@ export type SessionPayload = {
   username: string;
   name: string;
   role: "ADMIN" | "DESK";
-  deskId: string | null;
+  deskIds: string[];
 };
 
 export async function hashPassword(password: string) {

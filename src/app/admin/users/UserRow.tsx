@@ -15,8 +15,8 @@ export default function UserRow({
     name: string;
     username: string;
     role: "ADMIN" | "DESK";
-    deskId: string | null;
-    deskTitle: string | null;
+    deskIds: string[];
+    deskTitles: string;
   };
   desks: { id: string; title: string }[];
 }) {
@@ -33,7 +33,7 @@ export default function UserRow({
         <td className="px-4 py-3">{user.name}</td>
         <td className="px-4 py-3 text-ink-soft">{user.username}</td>
         <td className="px-4 py-3">{user.role}</td>
-        <td className="px-4 py-3 text-ink-soft">{user.deskTitle ?? "—"}</td>
+        <td className="px-4 py-3 text-ink-soft">{user.deskTitles || "—"}</td>
         <td className="px-4 py-3 text-right space-x-3">
           <button
             onClick={() => setEditing(true)}
@@ -107,23 +107,24 @@ export default function UserRow({
           {role === "DESK" && (
             <div>
               <label className="block text-xs font-medium text-ink mb-1">
-                Desk
+                Desks (select one or more)
               </label>
-              <select
-                name="deskId"
-                required
-                defaultValue={user.deskId ?? ""}
-                className="border border-line rounded-sm px-3 py-1.5 bg-white text-ink text-sm focus:outline-none focus:ring-2 focus:ring-ink"
-              >
-                <option value="" disabled>
-                  Select…
-                </option>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 border border-line rounded-sm px-3 py-1.5 bg-white max-w-xs">
                 {desks.map((d) => (
-                  <option key={d.id} value={d.id}>
+                  <label
+                    key={d.id}
+                    className="flex items-center gap-1.5 text-sm text-ink"
+                  >
+                    <input
+                      type="checkbox"
+                      name="deskIds"
+                      value={d.id}
+                      defaultChecked={user.deskIds.includes(d.id)}
+                    />
                     {d.title}
-                  </option>
+                  </label>
                 ))}
-              </select>
+              </div>
             </div>
           )}
           <button

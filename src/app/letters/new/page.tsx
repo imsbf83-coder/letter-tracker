@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { requireSession, getDeskTitle } from "@/lib/require-session";
+import { requireSession, getDeskTitles } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import NewLetterForm from "./NewLetterForm";
 import Link from "next/link";
 
 export default async function NewLetterPage() {
   const session = await requireSession();
-  const deskTitle = await getDeskTitle(session.deskId);
+  const deskTitle = await getDeskTitles(session.deskIds);
 
   const [schools, desks] = await Promise.all([
     prisma.school.findMany({ orderBy: { name: "asc" } }),
@@ -42,7 +42,7 @@ export default async function NewLetterPage() {
             code: s.code,
           }))}
           desks={desks.map((d) => ({ id: d.id, title: d.title }))}
-          defaultDeskId={session.deskId}
+          defaultDeskId={(session.deskIds ?? [])[0] ?? null}
         />
       )}
     </AppShell>

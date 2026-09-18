@@ -50,14 +50,22 @@ export default function AppShell({
           <p className="text-paper/60 text-xs">
             {deskTitle ?? (session.role === "ADMIN" ? "Administrator" : "")}
           </p>
-          <form action={logoutAction} className="mt-3">
-            <button
-              type="submit"
+          <div className="mt-3 flex items-center gap-3">
+            <Link
+              href="/account"
               className="text-xs text-paper/60 hover:text-paper underline underline-offset-2"
             >
-              Sign out
-            </button>
-          </form>
+              Account
+            </Link>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="text-xs text-paper/60 hover:text-paper underline underline-offset-2"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </aside>
 

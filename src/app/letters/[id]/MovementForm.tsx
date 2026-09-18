@@ -144,37 +144,36 @@ export default function MovementForm({
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1">
+              Outgoing letter no.{" "}
+              <span className="text-ink-soft font-normal">(if any)</span>
+            </label>
+            <input
+              name="letterNo"
+              placeholder="e.g. 456/2026"
+              className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+            />
+          </div>
+
           {(disposalType === "REPLIED" ||
             disposalType === "FORWARDED_EXTERNAL") && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">
-                  Outgoing letter no.{" "}
-                  <span className="text-ink-soft font-normal">(if any)</span>
-                </label>
-                <input
-                  name="letterNo"
-                  placeholder="e.g. 456/2026"
-                  className="diary-no w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">
-                  {disposalType === "REPLIED"
-                    ? "Sent to (person/office at the school)"
-                    : "Sent to (department/office)"}
-                </label>
-                <input
-                  name="sentTo"
-                  placeholder={
-                    disposalType === "REPLIED"
-                      ? "e.g. Headmistress"
-                      : "e.g. name of the department or office"
-                  }
-                  className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
-                />
-              </div>
-            </>
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">
+                {disposalType === "REPLIED"
+                  ? "Sent to (person/office at the school)"
+                  : "Sent to (department/office)"}
+              </label>
+              <input
+                name="sentTo"
+                placeholder={
+                  disposalType === "REPLIED"
+                    ? "e.g. Headmistress"
+                    : "e.g. name of the department or office"
+                }
+                className="w-full border border-line rounded-sm px-3 py-2 bg-white text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+              />
+            </div>
           )}
 
           <div>

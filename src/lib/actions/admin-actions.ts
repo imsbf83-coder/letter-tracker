@@ -1,5 +1,6 @@
 "use server";
 
+import Papa from "papaparse";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-session";
@@ -50,52 +51,6 @@ export async function deleteSchoolAction(formData: FormData) {
   revalidatePath("/admin/schools");
 }
 
-// ---- Schools: CSV import ----
-
-// Minimal RFC4180-ish CSV parser: handles quoted fields, escaped quotes ("")
-// and commas inside quotes. Good enough for a simple name/code/contact list.
-function parseCsvLine(line: string): string[] {
-  const cells: string[] = [];
-  let cur = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (inQuotes) {
-      if (char === '"') {
-        if (line[i + 1] === '"') {
-          cur += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        cur += char;
-      }
-    } else if (char === '"') {
-      inQuotes = true;
-    } else if (char === ",") {
-      cells.push(cur);
-      cur = "";
-    } else {
-      cur += char;
-    }
-  }
-  cells.push(cur);
-  return cells.map((c) => c.trim());
-}
-
-function parseCsv(text: string): Record<string, string>[] {
-  const lines = text.split(/\r\n|\n|\r/).filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return [];
-  const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
-  return lines.slice(1).map((line) => {
-    const cells = parseCsvLine(line);
-    const row: Record<string, string> = {};
-    headers.forEach((h, i) => (row[h] = cells[i] ?? ""));
-    return row;
-  });
-}
-
 export type ImportSchoolsState =
   | { error: string }
   | { added: number; skipped: { row: number; reason: string }[] }
@@ -109,67 +64,66 @@ export async function importSchoolsAction(
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return { error: "Choose a CSV file to import." };
+    return { error: "Choose a CSV file first." };
   }
 
   const text = await file.text();
-  const rows = parseCsv(text);
-  if (rows.length === 0) {
-    return { error: "The CSV file is empty." };
-  }
-  if (!("name" in rows[0])) {
-    return {
-      error: "The CSV needs a 'name' column in its header row.",
-    };
+  const parsed = Papa.parse<Record<string, string>>(text, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (h) => h.trim().toLowerCase(),
+  });
+
+  const rows = parsed.data;
+  if (!rows || rows.length === 0) {
+    return { error: "No rows found in that file." };
   }
 
-  const existing = await prisma.school.findMany({
-    select: { name: true, code: true },
-  });
-  const seenNames = new Set(existing.map((s) => s.name.trim().toLowerCase()));
-  const seenCodes = new Set(
-    existing.filter((s) => s.code).map((s) => s.code!.trim().toLowerCase())
+  const existing = await prisma.school.findMany();
+  const takenNames = new Set(
+    existing.map((s) => s.name.trim().toLowerCase())
+  );
+  const takenCodes = new Set(
+    existing
+      .filter((s) => s.code)
+      .map((s) => s.code!.trim().toLowerCase())
   );
 
+  let added = 0;
   const skipped: { row: number; reason: string }[] = [];
-  const toCreate: { name: string; code: string | null; contact: string | null }[] =
-    [];
 
-  rows.forEach((row, idx) => {
-    const rowNum = idx + 2; // +1 for header, +1 for 1-indexing
-    const name = (row["name"] ?? "").trim();
-    const code = (row["code"] ?? "").trim();
-    const contact = (row["contact"] ?? "").trim();
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2; // +1 for zero-index, +1 for the header line
+
+    const name = (row.name ?? "").trim();
+    const code = (row.code ?? "").trim();
+    const contact = (row.contact ?? "").trim();
 
     if (!name) {
-      skipped.push({ row: rowNum, reason: "Missing school name." });
-      return;
+      skipped.push({ row: rowNo, reason: "no name given" });
+      continue;
     }
-    if (seenNames.has(name.toLowerCase())) {
-      skipped.push({ row: rowNum, reason: `"${name}" already exists.` });
-      return;
+    if (takenNames.has(name.toLowerCase())) {
+      skipped.push({ row: rowNo, reason: `"${name}" already exists` });
+      continue;
     }
-    if (code && seenCodes.has(code.toLowerCase())) {
-      skipped.push({
-        row: rowNum,
-        reason: `Code "${code}" is already used by another school.`,
-      });
-      return;
+    if (code && takenCodes.has(code.toLowerCase())) {
+      skipped.push({ row: rowNo, reason: `code "${code}" already in use` });
+      continue;
     }
 
-    seenNames.add(name.toLowerCase());
-    if (code) seenCodes.add(code.toLowerCase());
-    toCreate.push({ name, code: code || null, contact: contact || null });
-  });
+    await prisma.school.create({
+      data: {
+        name,
+        code: code || null,
+        contact: contact || null,
+      },
+    });
 
-  let added = 0;
-  for (const school of toCreate) {
-    try {
-      await prisma.school.create({ data: school });
-      added++;
-    } catch {
-      skipped.push({ row: -1, reason: `Could not add "${school.name}".` });
-    }
+    takenNames.add(name.toLowerCase());
+    if (code) takenCodes.add(code.toLowerCase());
+    added++;
   }
 
   revalidatePath("/admin/schools");
@@ -203,8 +157,10 @@ export async function updateDeskAction(
   if (!id) return { error: "Missing desk id." };
   if (!title) return { error: "Desk title is required." };
 
-  const clash = await prisma.desk.findFirst({ where: { title, NOT: { id } } });
-  if (clash) return { error: "A desk with that title already exists." };
+  const clash = await prisma.desk.findUnique({ where: { title } });
+  if (clash && clash.id !== id) {
+    return { error: "A desk with that title already exists." };
+  }
 
   await prisma.desk.update({ where: { id }, data: { title } });
   revalidatePath("/admin/desks");
@@ -229,13 +185,13 @@ export async function addUserAction(
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const role = String(formData.get("role") ?? "DESK") as "ADMIN" | "DESK";
-  const deskId = String(formData.get("deskId") ?? "") || null;
+  const deskIds = formData.getAll("deskIds").map(String).filter(Boolean);
 
   if (!name || !username || !password) {
     return { error: "Name, username, and password are all required." };
   }
-  if (role === "DESK" && !deskId) {
-    return { error: "Choose a desk for this user." };
+  if (role === "DESK" && deskIds.length === 0) {
+    return { error: "Choose at least one desk for this user." };
   }
 
   const exists = await prisma.user.findUnique({ where: { username } });
@@ -248,7 +204,8 @@ export async function addUserAction(
       username,
       passwordHash,
       role,
-      deskId: role === "ADMIN" ? null : deskId,
+      desks:
+        role === "ADMIN" ? undefined : { connect: deskIds.map((id) => ({ id })) },
     },
   });
   revalidatePath("/admin/users");
@@ -264,24 +221,20 @@ export async function updateUserAction(
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const role = String(formData.get("role") ?? "DESK") as "ADMIN" | "DESK";
-  const deskId = String(formData.get("deskId") ?? "") || null;
+  const deskIds = formData.getAll("deskIds").map(String).filter(Boolean);
 
   if (!id) return { error: "Missing user id." };
   if (!name || !username) {
     return { error: "Name and username are required." };
   }
-  if (role === "DESK" && !deskId) {
-    return { error: "Choose a desk for this user." };
+  if (role === "DESK" && deskIds.length === 0) {
+    return { error: "Choose at least one desk for this user." };
   }
 
-  const clash = await prisma.user.findFirst({
-    where: { username, NOT: { id } },
-  });
-  if (clash) return { error: "That username is already taken." };
-
-  // Password field is optional on edit — only rehash and update it if the
-  // admin actually typed a new one.
-  const passwordHash = password ? await hashPassword(password) : undefined;
+  const clash = await prisma.user.findUnique({ where: { username } });
+  if (clash && clash.id !== id) {
+    return { error: "That username is already taken." };
+  }
 
   await prisma.user.update({
     where: { id },
@@ -289,8 +242,10 @@ export async function updateUserAction(
       name,
       username,
       role,
-      deskId: role === "ADMIN" ? null : deskId,
-      ...(passwordHash ? { passwordHash } : {}),
+      // "set" replaces every existing desk connection with this exact list,
+      // so removing a desk here actually removes it, not just adds new ones.
+      desks: { set: role === "ADMIN" ? [] : deskIds.map((id) => ({ id })) },
+      ...(password ? { passwordHash: await hashPassword(password) } : {}),
     },
   });
   revalidatePath("/admin/users");
@@ -302,4 +257,26 @@ export async function deleteUserAction(formData: FormData) {
   if (!id) return;
   await prisma.user.delete({ where: { id } }).catch(() => null);
   revalidatePath("/admin/users");
+}
+
+// ---- Danger zone ----
+
+export async function clearLettersAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  await requireAdmin();
+  const confirmation = String(formData.get("confirmation") ?? "").trim();
+
+  if (confirmation !== "DELETE") {
+    return { error: 'Type DELETE (all caps) exactly to confirm.' };
+  }
+
+  // Movements reference letters, so clear those first.
+  await prisma.movement.deleteMany({});
+  await prisma.letter.deleteMany({});
+
+  revalidatePath("/dashboard");
+  revalidatePath("/letters");
+  revalidatePath("/admin");
 }

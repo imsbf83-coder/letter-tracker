@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireSession, getDeskTitle } from "@/lib/require-session";
+import { requireSession, getDeskTitles, canActOnDesk } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import MovementForm from "./MovementForm";
+import RetrievalForm from "./RetrievalForm";
 
 function disposalLabel(type: string) {
   switch (type) {
@@ -21,12 +23,16 @@ function disposalLabel(type: string) {
 
 export default async function LetterDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ view?: string }>;
 }) {
   const { id } = await params;
+  const { view } = await searchParams;
+  const viewOnly = view === "1";
   const session = await requireSession();
-  const deskTitle = await getDeskTitle(session.deskId);
+  const deskTitle = await getDeskTitles(session.deskIds);
 
   const [letter, desks] = await Promise.all([
     prisma.letter.findUnique({
@@ -40,6 +46,10 @@ export default async function LetterDetailPage({
           include: { fromDesk: true, toDesk: true, movedBy: true },
           orderBy: { createdAt: "asc" },
         },
+        retrievalRequests: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     }),
     prisma.desk.findMany({ orderBy: { title: "asc" } }),
@@ -48,8 +58,16 @@ export default async function LetterDetailPage({
   if (!letter) notFound();
 
   const canAct =
+    !viewOnly &&
     letter.status === "PENDING" &&
-    (session.role === "ADMIN" || session.deskId === letter.currentDeskId);
+    canActOnDesk(session, letter.currentDeskId);
+
+  const latestRetrieval = letter.retrievalRequests[0] ?? null;
+  const canRequestRetrieval =
+    !viewOnly &&
+    letter.status === "CLOSED" &&
+    canActOnDesk(session, letter.currentDeskId) &&
+    latestRetrieval?.status !== "PENDING";
 
   return (
     <AppShell session={session} deskTitle={deskTitle}>
@@ -137,13 +155,19 @@ export default async function LetterDetailPage({
           <li key={m.id} className="ml-5 pb-6 relative">
             <span
               className={`absolute -left-[27px] top-1 w-3 h-3 rounded-full ${
-                m.action === "CLOSE" ? "bg-forest" : "bg-ink-soft"
+                m.action === "CLOSE"
+                  ? "bg-forest"
+                  : m.action === "REOPENED"
+                  ? "bg-brass"
+                  : "bg-ink-soft"
               }`}
             />
             <p className="text-sm text-ink">
               <span className="font-medium">{m.movedBy.name}</span>{" "}
               {m.action === "CLOSE"
                 ? `closed the letter from ${m.fromDesk.title}`
+                : m.action === "REOPENED"
+                ? `reopened the letter (approved retrieval)`
                 : `marked it from ${m.fromDesk.title} to ${m.toDesk?.title}`}
             </p>
             {m.disposalType && (
@@ -182,9 +206,35 @@ export default async function LetterDetailPage({
 
       {!canAct && letter.status === "PENDING" && (
         <p className="text-sm text-ink-soft border border-dashed border-line rounded-sm p-4">
-          This letter is at {letter.currentDesk.title}. Only that desk (or an
-          administrator) can move it forward.
+          {viewOnly ? (
+            <>
+              Viewing from All Letters — this page is read-only here. To act
+              on a letter at your desk, open it from the{" "}
+              <Link
+                href="/dashboard"
+                className="text-ink underline underline-offset-2"
+              >
+                Dashboard
+              </Link>
+              .
+            </>
+          ) : (
+            <>
+              This letter is at {letter.currentDesk.title}. Only that desk (or
+              an administrator) can move it forward.
+            </>
+          )}
         </p>
+      )}
+
+      {letter.status === "CLOSED" && latestRetrieval?.status === "PENDING" && (
+        <p className="text-sm text-brass border border-dashed border-line rounded-sm p-4">
+          A retrieval request is pending admin approval.
+        </p>
+      )}
+
+      {canRequestRetrieval && (
+        <RetrievalForm letterId={letter.id} />
       )}
     </AppShell>
   );

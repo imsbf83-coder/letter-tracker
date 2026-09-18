@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, getDeskTitle } from "@/lib/require-session";
+import { requireAdmin, getDeskTitles } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import AddDeskForm from "./AddDeskForm";
 import DeskRow from "./DeskRow";
 
 export default async function AdminDesksPage() {
   const session = await requireAdmin();
-  const deskTitle = await getDeskTitle(session.deskId);
+  const deskTitle = await getDeskTitles(session.deskIds);
   const desks = await prisma.desk.findMany({
     orderBy: { title: "asc" },
     include: { _count: { select: { users: true } } },

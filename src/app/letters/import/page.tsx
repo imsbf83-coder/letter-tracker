@@ -1,10 +1,10 @@
-import { requireSession, getDeskTitle } from "@/lib/require-session";
+import { requireSession, getDeskTitles } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import ImportForm from "./ImportForm";
 
 export default async function ImportLettersPage() {
   const session = await requireSession();
-  const deskTitle = await getDeskTitle(session.deskId);
+  const deskTitle = await getDeskTitles(session.deskIds);
 
   return (
     <AppShell session={session} deskTitle={deskTitle}>

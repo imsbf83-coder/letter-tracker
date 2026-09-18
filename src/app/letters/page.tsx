@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { requireSession, getDeskTitle } from "@/lib/require-session";
+import { requireSession, getDeskTitles } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import type { Prisma } from "@prisma/client";
 
@@ -10,7 +10,7 @@ export default async function LettersPage({
   searchParams: Promise<{ q?: string; status?: string; schoolId?: string }>;
 }) {
   const session = await requireSession();
-  const deskTitle = await getDeskTitle(session.deskId);
+  const deskTitle = await getDeskTitles(session.deskIds);
   const params = await searchParams;
 
   const [schools] = await Promise.all([
@@ -109,7 +109,7 @@ export default async function LettersPage({
                 >
                   <td className="px-4 py-3">
                     <Link
-                      href={`/letters/${letter.id}`}
+                      href={`/letters/${letter.id}?view=1`}
                       className="diary-no text-sm text-ink underline underline-offset-2"
                     >
                       {letter.diaryNo}

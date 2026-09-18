@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { requireAdmin, getDeskTitle } from "@/lib/require-session";
+import { requireAdmin, getDeskTitles } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
+import ClearLettersForm from "./ClearLettersForm";
 
 export default async function AdminPage() {
   const session = await requireAdmin();
-  const deskTitle = await getDeskTitle(session.deskId);
+  const deskTitle = await getDeskTitles(session.deskIds);
 
   const sections = [
     {
@@ -22,6 +23,11 @@ export default async function AdminPage() {
       title: "Users",
       desc: "Login accounts, one per desk.",
     },
+    {
+      href: "/admin/retrievals",
+      title: "Retrieval requests",
+      desc: "Approve or reject requests to reopen closed letters.",
+    },
   ];
 
   return (
@@ -31,7 +37,7 @@ export default async function AdminPage() {
         Set up schools, desks, and user accounts.
       </p>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4 mb-10">
         {sections.map((s) => (
           <Link
             key={s.href}
@@ -43,6 +49,15 @@ export default async function AdminPage() {
           </Link>
         ))}
       </div>
+
+      <h3 className="font-serif text-lg font-bold text-vermillion mb-1">
+        Danger zone
+      </h3>
+      <p className="text-sm text-ink-soft mb-3">
+        Permanently deletes every letter and its movement history. Schools,
+        desks, and user accounts are kept.
+      </p>
+      <ClearLettersForm />
     </AppShell>
   );
 }

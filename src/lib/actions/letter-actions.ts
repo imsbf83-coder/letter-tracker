@@ -3,14 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/require-session";
-import type { SessionPayload } from "@/lib/auth";
+import { requireSession, canActOnDesk } from "@/lib/require-session";
 
 export type FormState = { error?: string } | undefined;
-
-function canActOnDesk(session: SessionPayload, currentDeskId: string) {
-  return session.role === "ADMIN" || session.deskId === currentDeskId;
-}
 
 export async function createLetterAction(
   _prevState: FormState,

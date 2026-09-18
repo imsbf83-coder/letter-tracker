@@ -144,7 +144,7 @@ export async function importLettersAction(
   // Every imported letter starts at the importing user's own desk (an admin
   // with no desk of their own falls back to "Unspecified") — the CSV no
   // longer needs a desk column at all.
-  const importDeskId = session.deskId ?? (await resolveDesk(""));
+  const importDeskId = (session.deskIds ?? [])[0] ?? (await resolveDesk(""));
 
   for (const row of rows) {
     // Every field is optional here on purpose — missing data never blocks

@@ -1,25 +1,23 @@
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, getDeskTitle } from "@/lib/require-session";
+import { requireAdmin, getDeskTitles } from "@/lib/require-session";
 import AppShell from "@/components/AppShell";
 import AddSchoolForm from "./AddSchoolForm";
-import ImportSchoolsForm from "./ImportSchoolsForm";
 import SchoolRow from "./SchoolRow";
 
 export default async function AdminSchoolsPage() {
   const session = await requireAdmin();
-  const deskTitle = await getDeskTitle(session.deskId);
+  const deskTitle = await getDeskTitles(session.deskIds);
   const schools = await prisma.school.findMany({ orderBy: { name: "asc" } });
 
   return (
     <AppShell session={session} deskTitle={deskTitle}>
       <h2 className="font-serif text-2xl font-bold text-ink mb-1">Schools</h2>
       <p className="text-ink-soft text-sm mb-6">
-        Add every school your office receives letters from — one at a time
-        below, or all at once with a CSV import.
+        Add every school your office receives letters from. You can paste
+        these in one at a time, or ask me to bulk-import a list you provide.
       </p>
 
       <AddSchoolForm />
-      <ImportSchoolsForm />
 
       <div className="border border-line rounded-sm overflow-hidden">
         <table className="w-full text-sm">

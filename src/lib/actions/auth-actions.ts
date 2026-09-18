@@ -17,7 +17,10 @@ export async function loginAction(
     return { error: "Enter your username and password." };
   }
 
-  const user = await prisma.user.findUnique({ where: { username } });
+  const user = await prisma.user.findUnique({
+    where: { username },
+    include: { desks: true },
+  });
   if (!user) {
     return { error: "No account with that username." };
   }
@@ -32,7 +35,7 @@ export async function loginAction(
     username: user.username,
     name: user.name,
     role: user.role,
-    deskId: user.deskId,
+    deskIds: user.desks.map((d) => d.id),
   });
 
   redirect("/dashboard");
